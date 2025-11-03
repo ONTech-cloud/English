@@ -1,1 +1,98 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>English Vocabulary Practice</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    body {
+      background: linear-gradient(135deg, #2b1055, #7597de);
+      color: white;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    h1 {
+      font-size: 2.8rem;
+      margin-bottom: 1.5rem;
+      text-align: center;
+      letter-spacing: 1px;
+      background: linear-gradient(to right, #fff, #c0d6ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: fadeInDown 1s ease-out;
+    }
+
+    .buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.2rem;
+      justify-content: center;
+      animation: fadeInUp 1s ease-in-out;
+    }
+
+    .btn {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      backdrop-filter: blur(10px);
+      padding: 1rem 2.2rem;
+      border-radius: 16px;
+      color: white;
+      font-size: 1.2rem;
+      text-decoration: none;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+
+    .btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: translateY(-5px) scale(1.05);
+      box-shadow: 0 6px 25px rgba(255, 255, 255, 0.2);
+    }
+
+    footer {
+      position: absolute;
+      bottom: 15px;
+      font-size: 0.9rem;
+      opacity: 0.7;
+    }
+
+    @keyframes fadeInDown {
+      from { opacity: 0; transform: translateY(-40px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(40px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>English Vocabulary Practice</h1>
+  <div class="buttons">
+    <a href="anglais.html" class="btn">🧠 Study Mode 1</a>
+    <a href="anglais2.html" class="btn">📘 Study Mode 2</a>
+    <a href="anglais3.html" class="btn">📝 Study Mode 3</a>
+    <a href="matching_game.html" class="btn">🎯 Matching Game</a>
+  </div>
+
+  <footer>© 2025 OnTech Cloud — English Learning Hub</footer>
+
+</body>
+</html>
