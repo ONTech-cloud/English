@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test de Vocabulaire : Écrivez le Synonyme</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f7f7;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: auto;
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .word-row {
+            display: grid;
+            grid-template-columns: 1fr 2fr 100px; /* Word | Input | Status */
+            gap: 1.5rem;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            background-color: #fafafa;
+        }
+        .input-field {
+            padding: 0.75rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 6px;
+            transition: all 0.2s;
+            width: 100%;
+        }
+        .input-field:focus {
+            border-color: #4f46e5;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+        }
+        .status-icon {
+            font-size: 1.5rem;
+            text-align: center;
+        }
+        .correct-input {
+            background-color: #d1fae5;
+            border-color: #059669;
+        }
+        .incorrect-input {
+            background-color: #fee2e2;
+            border-color: #ef4444;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">Test de Vocabulaire : Écrivez le Synonyme</h1>
+        <p class="text-center text-gray-600 mb-8">Pour chaque mot (Colonne A), écrivez le synonyme anglais correspondant. Une faute d'orthographe sera considérée comme une erreur !</p>
+
+        <div id="game-message" class="text-center p-3 mb-6 font-semibold rounded-lg hidden"></div>
+
+        <div class="grid" style="grid-template-columns: 1fr 2fr 100px; gap: 1.5rem; margin-bottom: 1rem;">
+            <h2 class="text-xl font-bold text-gray-700">Mot Original</h2>
+            <h2 class="text-xl font-bold text-gray-700">Votre Synonyme</h2>
+            <h2 class="text-xl font-bold text-gray-700 text-center">Statut</h2>
+        </div>
+
+        <div id="word-list" class="flex flex-col space-y-4">
+            <!-- Word rows will be inserted here by JavaScript -->
+        </div>
+
+        <button id="check-button" class="mt-8 w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg transition duration-150 shadow-md hover:shadow-lg" onclick="checkAllAnswers()">
+            Vérifier mes Réponses
+        </button>
+
+        <button id="reset-button" class="mt-4 w-full bg-gray-400 hover:bg-gray-500 text-white font-bold py-3 rounded-lg transition duration-150 shadow-md hover:shadow-lg" onclick="setupGame()">
+            Réinitialiser le Test
+        </button>
+    </div>
+
+    <script>
+        // Data structure: The key is the ENGLISH WORD, the value is ONE of the ENGLISH SYNONYMS.
+        const vocabulary = {
+            'attraction': "desire", 
+            'sweetheart': "darling",
+            'tear': "drop", 
+            'dimple': "hollow",
+            'to twinkle': "shine",
+            'to poke': "touch", 
+            'wide': "large", 
+            'freckle': "spot", 
+            'polished': "shiny", 
+            'reserve': "territory", 
+            'ditch': "trench", 
+            'to earn': "obtain", 
+            'genuine': "autenthic", 
+            'wreckers': "ruin", 
+            'to tinker': "build", 
+            'to pitch': "throw", 
+            'rancher': "farmer", 
+            'absently': "distractedly", 
+            'grease': "oil", 
+            'to dive': "jump" 
+        };
+
+        const wordListContainer = document.getElementById('word-list');
+        const messageBox = document.getElementById('game-message');
+
+        /**
+         * Displays a message in the message box.
+         * @param {string} text The message to display.
+         * @param {string} classes The Tailwind CSS classes for styling.
+         */
+        function showMessage(text, classes) {
+            // Check if messageBox is defined before using it
+            if (messageBox) {
+                messageBox.textContent = text;
+                messageBox.className = `text-center p-3 mb-6 font-semibold rounded-lg ${classes}`;
+                messageBox.classList.remove('hidden');
+            } else {
+                console.error("Erreur: L'élément 'messageBox' est introuvable.");
+            }
+        }
+
+        // --- Fonctions de vérification stricte ---
+
+        /**
+         * Shuffles an array using the Fisher-Yates algorithm.
+         */
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        /**
+         * Creates and renders the input fields.
+         */
+        function setupGame() {
+            wordListContainer.innerHTML = '';
+            messageBox.classList.add('hidden');
+
+            const originalWords = Object.keys(vocabulary);
+            shuffle(originalWords); // Shuffle the order of presentation
+
+            originalWords.forEach((word, index) => {
+                const row = document.createElement('div');
+                row.className = 'word-row shadow-sm';
+                row.dataset.original = word;
+                
+                const correctSynonym = vocabulary[word];
+
+                // 1. Original Word
+                const wordSpan = document.createElement('span');
+                wordSpan.className = 'text-gray-900 font-semibold';
+                wordSpan.textContent = word;
+
+                // 2. Input Field
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.className = 'input-field';
+                input.placeholder = 'Entrez le synonyme ici...';
+                input.dataset.correct = correctSynonym;
+                input.id = `input-${index}`;
+                
+                // 3. Status Icon
+                const statusIcon = document.createElement('span');
+                statusIcon.className = 'status-icon text-gray-500';
+                statusIcon.id = `status-${index}`;
+                statusIcon.textContent = '?';
+
+                row.appendChild(wordSpan);
+                row.appendChild(input);
+                row.appendChild(statusIcon);
+                wordListContainer.appendChild(row);
+            });
+            showMessage("Test prêt ! Écrivez vos réponses.", 'bg-blue-100 text-blue-700');
+        }
+
+        /**
+         * Checks all user inputs against the correct synonyms using STRICT matching.
+         */
+        function checkAllAnswers() {
+            const inputFields = wordListContainer.querySelectorAll('.input-field');
+            let totalCorrect = 0;
+
+            inputFields.forEach((input) => {
+                // Nettoyer la valeur tapée (minuscules, supprimer les espaces en début/fin)
+                const typedValue = input.value.toLowerCase().trim();
+                const correctSynonym = input.dataset.correct.toLowerCase().trim();
+                const statusIcon = document.getElementById(`status-${input.id.split('-')[1]}`);
+
+                // Clear previous classes
+                input.classList.remove('correct-input', 'incorrect-input');
+                
+                if (typedValue === '') {
+                    statusIcon.textContent = '...';
+                    statusIcon.className = 'status-icon text-gray-500';
+                    return;
+                }
+
+                // VÉRIFICATION STRICTE
+                if (typedValue === correctSynonym) {
+                    totalCorrect++;
+                    input.classList.add('correct-input');
+                    statusIcon.textContent = '✅';
+                    statusIcon.className = 'status-icon text-green-600';
+                } else {
+                    input.classList.add('incorrect-input');
+                    statusIcon.textContent = '❌';
+                    statusIcon.className = 'status-icon text-red-600';
+                }
+            });
+
+            const totalWords = Object.keys(vocabulary).length;
+            
+            if (totalCorrect === totalWords) {
+                showMessage(`🎉 EXCELLENT ! ${totalCorrect}/${totalWords} réponses exactes.`, 'bg-yellow-100 text-yellow-700');
+            } else {
+                showMessage(`Score strict : ${totalCorrect}/${totalWords}. L'orthographe doit être parfaite !`, 'bg-red-100 text-red-700');
+            }
+        }
+
+        // Initialize game on load
+        window.onload = setupGame;
+
+    </script>
+</body>
+</html>

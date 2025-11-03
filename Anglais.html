@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jeu d'Association de Vocabulaire (Synonymes)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f7f7;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: auto;
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .item {
+            cursor: pointer;
+            transition: all 0.2s;
+            user-select: none;
+            border: 2px solid transparent;
+        }
+        .selected {
+            background-color: #fce7f3; /* Pink Light */
+            border-color: #db2777; /* Pink Dark */
+            box-shadow: 0 0 0 3px #fce7f3;
+        }
+        .matched {
+            background-color: #d1fae5; /* Green Light */
+            border-color: #059669; /* Green Dark */
+            color: #059669;
+            pointer-events: none; /* Disable clicking once matched */
+        }
+        .mismatch {
+            background-color: #fee2e2; /* Red Light */
+            border-color: #ef4444; /* Red Dark */
+            animation: shake 0.5s;
+        }
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            20% { transform: translateX(-5px); }
+            40% { transform: translateX(5px); }
+            60% { transform: translateX(-5px); }
+            80% { transform: translateX(5px); }
+            100% { transform: translateX(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">Match de Vocabulaire : Mots et Synonymes</h1>
+        <p class="text-center text-gray-600 mb-8">Cliquez sur le mot de vocabulaire (Colonne A), puis sur son synonyme anglais (Colonne B).</p>
+
+        <div id="game-message" class="text-center p-3 mb-6 font-semibold rounded-lg hidden"></div>
+
+        <div class="grid grid-cols-2 gap-6">
+            <!-- Column A: English Words (Original) -->
+            <div id="column-a" class="flex flex-col space-y-3">
+                <h2 class="text-xl font-bold text-gray-700 mb-2 border-b pb-1">Colonne A (Mot Original)</h2>
+                <!-- Items will be inserted here by JavaScript -->
+            </div>
+
+            <!-- Column B: English Synonyms (Shuffled) -->
+            <div id="column-b" class="flex flex-col space-y-3">
+                <h2 class="text-xl font-bold text-gray-700 mb-2 border-b pb-1">Colonne B (Synonyme Anglais)</h2>
+                <!-- Items will be inserted here by JavaScript -->
+            </div>
+        </div>
+
+        <button id="reset-button" class="mt-8 w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg transition duration-150 shadow-md hover:shadow-lg" onclick="resetGame()">
+            Réinitialiser le Jeu
+        </button>
+    </div>
+
+    <script>
+        // Data structure: The key is the ENGLISH WORD, the value is ONE of the ENGLISH SYNONYMS.
+        const vocabulary = {
+            'attraction': "desire", 
+            'sweetheart': "darling",
+            'tear': "drop", 
+            'dimple': "hollow",
+            'to twinkle': "shine",
+            'to poke': "touch", 
+            'wide': "broad", 
+            'freckle': "spot", 
+            'polished': "shiny", 
+            'reserve': "supply", 
+            'ditch': "trench", 
+            'to earn': "obtain", 
+            'genuine': "real", 
+            'wreckers': "ruin", 
+            'to tinker': "fix", 
+            'to pitch': "throw", 
+            'rancher': "farmer", 
+            'absently': "distractedly", 
+            'grease': "oil", 
+            'to dive': "jump" 
+        };
+
+        let selectedA = null; // Stores the selected English word element
+        let selectedB = null; // Stores the selected English synonym element
+        let matchedCount = 0;
+        const totalWords = Object.keys(vocabulary).length;
+        const columnA = document.getElementById('column-a');
+        const columnB = document.getElementById('column-b');
+        const messageBox = document.getElementById('game-message');
+
+        /**
+         * Shuffles an array using the Fisher-Yates algorithm.
+         * @param {Array} array
+         */
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        /**
+         * Creates and renders the game board.
+         */
+        function setupGame() {
+            columnA.innerHTML = '<h2 class="text-xl font-bold text-gray-700 mb-2 border-b pb-1">Colonne A (Mot Original)</h2>';
+            columnB.innerHTML = '<h2 class="text-xl font-bold text-gray-700 mb-2 border-b pb-1">Colonne B (Synonyme Anglais)</h2>';
+            messageBox.classList.add('hidden');
+            matchedCount = 0;
+
+            const originalWords = Object.keys(vocabulary);
+            const synonyms = Object.values(vocabulary);
+
+            // Create arrays of objects to hold both the content and the correct match key (the original word)
+            const columnAItems = originalWords.map(word => ({ content: word, key: word })); // Key is the original word
+            const columnBItems = originalWords.map(word => ({ content: vocabulary[word], key: word })); // Content is the synonym, key is the original word
+
+            shuffle(columnAItems);
+            shuffle(columnBItems);
+
+            // Render Column A (Original Words)
+            columnAItems.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'item p-3 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-800 font-medium shadow-sm';
+                div.textContent = item.content;
+                div.dataset.key = item.key;
+                div.dataset.column = 'A';
+                div.addEventListener('click', handleClick);
+                columnA.appendChild(div);
+            });
+
+            // Render Column B (Synonyms)
+            columnBItems.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'item p-3 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-800 shadow-sm';
+                div.textContent = item.content;
+                div.dataset.key = item.key;
+                div.dataset.column = 'B';
+                div.addEventListener('click', handleClick);
+                columnB.appendChild(div);
+            });
+        }
+
+        /**
+         * Handles the click event on a word or synonym.
+         * @param {Event} event
+         */
+        function handleClick(event) {
+            const element = event.currentTarget;
+            const column = element.dataset.column;
+
+            // Clear previous selections of the same column type
+            if (column === 'A') {
+                if (selectedA) selectedA.classList.remove('selected');
+                selectedA = element;
+                selectedA.classList.add('selected');
+            } else { // column === 'B'
+                if (selectedB) selectedB.classList.remove('selected');
+                selectedB = element;
+                selectedB.classList.add('selected');
+            }
+
+            // Attempt to match if one from each column is selected
+            if (selectedA && selectedB) {
+                checkMatch();
+            } else {
+                // Clear message if we're just selecting the first item
+                messageBox.classList.add('hidden');
+            }
+        }
+
+        /**
+         * Checks if the two selected elements match.
+         */
+        function checkMatch() {
+            const keyA = selectedA.dataset.key;
+            const keyB = selectedB.dataset.key;
+
+            // Match is successful (both keys match the original word)
+            if (keyA === keyB) {
+                // Apply 'matched' style and disable clicking
+                selectedA.classList.remove('selected');
+                selectedB.classList.remove('selected');
+                selectedA.classList.add('matched');
+                selectedB.classList.add('matched');
+
+                // Update message box
+                showMessage("✅ Match trouvé ! Très bien !", 'bg-green-100 text-green-700');
+                
+                // Clear selections
+                selectedA = null;
+                selectedB = null;
+                
+                matchedCount++;
+                if (matchedCount === totalWords) {
+                    showMessage("🎉 Félicitations ! Vous avez réussi le jeu !", 'bg-yellow-100 text-yellow-700');
+                }
+            } else {
+                // Mismatch
+                selectedA.classList.add('mismatch');
+                selectedB.classList.add('mismatch');
+                showMessage("❌ Ce n'est pas la bonne paire. Réessayez.", 'bg-red-100 text-red-700');
+                
+                // Clear mismatch style after animation and clear selections
+                setTimeout(() => {
+                    selectedA.classList.remove('selected', 'mismatch');
+                    selectedB.classList.remove('selected', 'mismatch');
+                    selectedA = null;
+                    selectedB = null;
+                }, 700);
+            }
+        }
+
+        /**
+         * Displays a message in the message box.
+         * @param {string} text The message to display.
+         * @param {string} classes The Tailwind CSS classes for styling.
+         */
+        function showMessage(text, classes) {
+            messageBox.textContent = text;
+            messageBox.className = `text-center p-3 mb-6 font-semibold rounded-lg ${classes}`;
+            messageBox.classList.remove('hidden');
+        }
+
+        /**
+         * Resets the game to a new shuffled state.
+         */
+        function resetGame() {
+            selectedA = null;
+            selectedB = null;
+            setupGame();
+            showMessage("Jeu réinitialisé. Bonne chance !", 'bg-blue-100 text-blue-700');
+        }
+
+        // Initialize game on load
+        window.onload = setupGame;
+
+    </script>
+</body>
+</html>
