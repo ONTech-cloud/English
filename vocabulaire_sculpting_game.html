@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Vocabulary Streak Challenge - Advanced</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body { font-family: 'Inter', sans-serif; background: #f9fafb; }
+  .timer { font-weight: bold; font-size: 1.5rem; }
+  .option { @apply bg-gray-200 hover:bg-indigo-300 rounded-lg py-2 px-4 m-2 cursor-pointer block; }
+</style>
+</head>
+<body class="flex justify-center items-center min-h-screen">
+  <div class="bg-white rounded-xl shadow-xl p-8 max-w-xl w-full text-center">
+    <h1 class="text-3xl font-bold mb-4">⚡ Vocabulary Streak Challenge (Hard Mode)</h1>
+    <p class="text-gray-600 mb-6">Click <b>GO</b> to start. Each question appears only once. 15s per question. Watch out for traps!</p>
+    <button id="start-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg mb-6">GO</button>
+
+    <div id="question-box" class="text-xl font-semibold text-gray-800 mb-4 hidden"></div>
+    <div id="options-box" class="hidden"></div>
+    <input id="answer-input" type="text" placeholder="Type your answer..." class="border border-gray-300 rounded-md p-3 w-full mb-4 focus:ring focus:ring-indigo-300 outline-none hidden" autocomplete="off" />
+    <button id="submit-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-lg hidden">Submit</button>
+
+    <div id="timer" class="timer text-red-500 mt-4 hidden">⏱️ 15</div>
+    <div id="streak" class="text-lg mt-4 text-gray-700 hidden">🔥 Streak: 0 / 46</div>
+    <div id="message" class="mt-4 font-semibold"></div>
+  </div>
+
+<script>
+// Group 1: multiple choice (definitions only)
+const vocabChoice = {
+  'sneaker': 'A light athletic shoe used for sports or casual wear.',
+  'feather': 'A delicate structure covering birds, helping them fly or stay warm.',
+  'throw': 'To propel an object through the air using one’s arm.',
+  'mop': 'To clean a dirty surface using a wet cleaning tool.',
+  'dimple': 'A tiny hollow on the face that appears when smiling.',
+  'heaven': 'A spiritual place believed to be the dwelling of divine beings.',
+  'kindergarten': 'An introductory class where young children start learning basics.',
+  'pointy': 'Ending in a sharp or narrow tip.',
+  'wedding': 'The formal ceremony joining two people in marriage.',
+  'highway': 'A main road built for fast travel between towns.',
+  'furniture': 'Movable household items such as tables and chairs.',
+  'sweetheart': 'Someone loved dearly; could also mean a kind person (trap).',
+  'bride': 'The woman getting married during a ceremony.',
+  'smock': 'A loose garment used for protection while working or painting.',
+  'groom': 'The man who is getting married; or to clean and care for an animal (trap).',
+  'throat': 'The passage connecting mouth and stomach, or the front of the neck.',
+  'freckles': 'Tiny brown spots on skin formed by exposure to sunlight.',
+  'speech': 'The act of talking or delivering an address to an audience.',
+  'wind': 'Moving air; could also refer to turning or twisting something (trap).',
+  'flat': 'Smooth or level surface; may also mean lacking excitement (trap).',
+  'hen': 'An adult female chicken, known for laying eggs.',
+  'aisle': 'A walkway between seats in a hall or shelves in a store.',
+  'headline': 'A main title of a news story intended to catch attention.',
+  'nest': 'A structure birds build to protect their eggs.',
+  'tool': 'An implement used to perform or assist in manual work.'
+};
+
+// Group 2: open questions (synonyms or meanings)
+const vocabOpen = {
+  'attraction': 'desire',
+  'sweetheart': 'darling',
+  'tear': 'drop',
+  'dimple': 'hollow',
+  'to twinkle': 'shine',
+  'to poke': 'touch',
+  'wide': 'broad',
+  'freckle': 'spot',
+  'polished': 'shiny',
+  'reserve': 'supply',
+  'ditch': 'trench',
+  'to earn': 'obtain',
+  'genuine': 'real',
+  'wreckers': 'ruin',
+  'to tinker': 'fix',
+  'to pitch': 'throw',
+  'rancher': 'farmer',
+  'absently': 'distractedly',
+  'grease': 'oil',
+  'to dive': 'jump'
+};
+
+let streak = 0;
+let timer = null;
+let timeLeft = 15;
+let currentWord = null;
+let currentMode = null;
+const MAX_QUESTIONS = 46;
+let usedWords = new Set();
+
+function pickRandomKey(obj, excludeSet) {
+  const available = Object.keys(obj).filter(k => !excludeSet.has(k));
+  if (available.length === 0) return null;
+  return available[Math.floor(Math.random() * available.length)];
+}
+
+function showGameElements(show = true, isChoice = false) {
+  document.getElementById('question-box').classList.toggle('hidden', !show);
+  document.getElementById('timer').classList.toggle('hidden', !show);
+  document.getElementById('streak').classList.toggle('hidden', !show);
+  document.getElementById('options-box').classList.toggle('hidden', !isChoice);
+  document.getElementById('answer-input').classList.toggle('hidden', isChoice || !show);
+  document.getElementById('submit-btn').classList.toggle('hidden', isChoice || !show);
+}
+
+function startQuestion() {
+  clearInterval(timer);
+  timeLeft = 15;
+
+  // Randomly pick mode (60% choice, 40% open)
+  if (Math.random() < 0.6 && usedWords.size < Object.keys(vocabChoice).length) {
+    currentMode = 'choice';
+    currentWord = pickRandomKey(vocabChoice, usedWords);
+  } else {
+    currentMode = 'open';
+    currentWord = pickRandomKey(vocabOpen, usedWords);
+  }
+
+  if (!currentWord) return endGame('✅ You’ve answered all 46 questions!');
+  usedWords.add(currentWord);
+
+  document.getElementById('message').textContent = '';
+  document.getElementById('timer').textContent = `⏱️ ${timeLeft}`;
+  document.getElementById('question-box').innerHTML = currentMode === 'choice'
+    ? `What is the correct definition of: <b>${currentWord}</b>?`
+    : `Type a synonym or meaning for: <b>${currentWord}</b>`;
+
+  showGameElements(true, currentMode === 'choice');
+
+  if (currentMode === 'choice') {
+    generateOptions();
+  } else {
+    document.getElementById('answer-input').value = '';
+    document.getElementById('answer-input').focus();
+  }
+
+  timer = setInterval(() => {
+    timeLeft--;
+    document.getElementById('timer').textContent = `⏱️ ${timeLeft}`;
+    if (timeLeft <= 0) {
+      clearInterval(timer);
+      endGame('⏰ Time’s up!');
+    }
+  }, 1000);
+}
+
+function generateOptions() {
+  const optionsBox = document.getElementById('options-box');
+  optionsBox.innerHTML = '';
+  const correct = vocabChoice[currentWord];
+  const allValues = Object.values(vocabChoice);
+  const traps = [
+    'A wrong but similar-sounding meaning.',
+    'A definition close in theme but incorrect.',
+    'An intentionally confusing phrase.',
+    'An unrelated random guess.'
+  ];
+  const choices = [correct];
+  while (choices.length < 4) {
+    if (Math.random() < 0.3) {
+      const trap = traps[Math.floor(Math.random() * traps.length)];
+      if (!choices.includes(trap)) choices.push(trap);
+    } else {
+      const rand = allValues[Math.floor(Math.random() * allValues.length)];
+      if (!choices.includes(rand)) choices.push(rand);
+    }
+  }
+  choices.sort(() => Math.random() - 0.5);
+  choices.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.textContent = opt;
+    btn.className = 'bg-gray-200 hover:bg-indigo-300 rounded-lg py-2 px-4 m-2 cursor-pointer block w-full';
+    btn.onclick = () => checkAnswer(opt);
+    optionsBox.appendChild(btn);
+  });
+}
+
+function checkAnswer(userAnswer = null) {
+  if (!currentWord) return;
+  const correct = currentMode === 'choice' ? vocabChoice[currentWord] : vocabOpen[currentWord];
+  const inputVal = userAnswer ? userAnswer.toLowerCase() : document.getElementById('answer-input').value.trim().toLowerCase();
+  if (inputVal === correct.toLowerCase()) {
+    streak++;
+    document.getElementById('streak').textContent = `🔥 Streak: ${streak} / ${MAX_QUESTIONS}`;
+    document.getElementById('message').textContent = '✅ Correct!';
+    clearInterval(timer);
+    if (usedWords.size >= MAX_QUESTIONS) return endGame('🏆 Perfect! You completed all words.');
+    setTimeout(startQuestion, 1000);
+  } else {
+    endGame('❌ Wrong or tricky answer!');
+  }
+}
+
+function endGame(msg) {
+  clearInterval(timer);
+  document.getElementById('message').innerHTML = msg;
+  document.getElementById('question-box').innerHTML = 'Game Over. Press GO to restart!';
+  document.getElementById('options-box').innerHTML = '';
+  document.getElementById('submit-btn').disabled = true;
+  document.getElementById('start-btn').disabled = false;
+  currentWord = null;
+}
+
+document.getElementById('start-btn').addEventListener('click', () => {
+  streak = 0;
+  usedWords.clear();
+  document.getElementById('streak').textContent = `🔥 Streak: ${streak} / ${MAX_QUESTIONS}`;
+  document.getElementById('message').textContent = '';
+  document.getElementById('submit-btn').disabled = false;
+  document.getElementById('start-btn').disabled = true;
+  startQuestion();
+});
+
+document.getElementById('submit-btn').addEventListener('click', () => checkAnswer());
+
+document.getElementById('answer-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') checkAnswer();
+});
+</script>
+</body>
+</html>
